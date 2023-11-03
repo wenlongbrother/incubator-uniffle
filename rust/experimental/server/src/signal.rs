@@ -19,6 +19,8 @@
 pub mod details {
     use log::info;
     use signal_hook::{consts::TERM_SIGNALS, iterator::Signals};
+    use tokio::signal::unix::{signal, SignalKind};
+    use tokio::sync::oneshot::Sender;
 
     pub fn wait_for_signal() {
         let mut sigs = Signals::new(TERM_SIGNALS).expect("Failed to register signal handlers");
@@ -29,6 +31,15 @@ pub mod details {
                 break;
             }
         }
+    }
+
+    pub async fn graceful_wait_for_signal(tx: Sender<()>) {
+        let _ = signal(SignalKind::terminate())
+            .expect("Failed to register signal handlers")
+            .recv()
+            .await;
+
+        let _ = tx.send(());
     }
 }
 
